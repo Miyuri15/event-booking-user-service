@@ -2,7 +2,12 @@
 
 const userService = require("../services/user.service");
 const { generateToken } = require("../utils/jwt");
-
+const {
+  validateRegistrationPayload,
+  validateLoginPayload,
+  validateUpdatePayload,
+} = require("../utils/userValidation");
+const { createHttpError } = require("../utils/httpError");
 
 exports.createUser = async (req, res) => {
   try {
@@ -14,8 +19,12 @@ exports.createUser = async (req, res) => {
 };
 
 exports.getAllUsers = async (req, res) => {
-  const users = await userService.getAllUsers();
-  res.json(users);
+  try {
+    const users = await userService.getAllUsers();
+    res.json(users);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
 };
 
 exports.getUser = async (req, res) => {
@@ -23,41 +32,40 @@ exports.getUser = async (req, res) => {
     const user = await userService.getUserById(req.params.id);
 
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      throw createHttpError(404, "User not found");
     }
 
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
 
-// REGISTER
 exports.register = async (req, res) => {
   try {
-    const user = await userService.registerUser(req.body);
+    const payload = validateRegistrationPayload(req.body);
+    const user = await userService.registerUser(payload);
     res.status(201).json(user);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(err.statusCode || 500).json({ message: err.message });
   }
 };
 
-// LOGIN
 exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
-    if (typeof password !== "string") {
-      return res.status(400).json({ message: "Password must be a string" });
-    }
-
+    const { email, password } = validateLoginPayload(req.body);
     const user = await userService.loginUser(email, password);
-
     const token = generateToken(user);
-
-    res.json({ token });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (err) {
-    res.status(401).json({ message: err.message });
+    res.status(err.statusCode || 500).json({ message: err.message });
   }
 };
 
@@ -67,5 +75,47 @@ exports.getUserBookings = async (req, res) => {
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+exports.getCurrentUser = async (req, res) => {
+  try {
+    const user = await userService.getUserById(req.user.id);
+
+    if (!user) {
+      throw createHttpError(404, "User not found");
+    }
+
+    res.json(user);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  try {
+    const updates = validateUpdatePayload(req.body);
+    const user = await userService.updateUser(req.params.id, updates);
+    res.json(user);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    await userService.deleteUser(req.params.id);
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
+exports.checkUserExists = async (req, res) => {
+  try {
+    const result = await userService.checkUserExists(req.params.id);
+    res.json(result);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
   }
 };

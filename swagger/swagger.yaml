@@ -2,56 +2,96 @@ openapi: 3.0.0
 info:
   title: User Service API
   version: 1.0.0
-  description: API documentation for User Microservice
+  description: API documentation for the Event Booking user-service
 
 servers:
   - url: http://localhost:8080
 
+tags:
+  - name: Auth
+  - name: Users
+  - name: Internal
+
 paths:
   /api/users/register:
     post:
+      tags: [Auth]
       summary: Register a new user
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              example:
-                name: Anuja
-                email: anuja@gmail.com
-                password: 123456
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         201:
           description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Validation error
+        409:
+          description: Email already exists
 
   /api/users/login:
     post:
+      tags: [Auth]
       summary: Login user
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              example:
-                email: anuja@gmail.com
-                password: 123456
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         200:
           description: JWT token returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        401:
+          description: Invalid credentials
 
   /api/users:
     get:
+      tags: [Users]
       summary: Get all users
       security:
         - bearerAuth: []
       responses:
         200:
           description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        401:
+          description: Missing or invalid token
+
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: Get current logged-in user profile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        401:
+          description: Missing or invalid token
 
   /api/users/{id}:
     get:
+      tags: [Users]
       summary: Get user by ID
       security:
         - bearerAuth: []
@@ -64,9 +104,70 @@ paths:
       responses:
         200:
           description: User data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        403:
+          description: Forbidden for another user
+        404:
+          description: User not found
+
+    put:
+      tags: [Users]
+      summary: Update user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        200:
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Validation error
+        403:
+          description: Forbidden for another user
+        404:
+          description: User not found
+        409:
+          description: Email already exists
+
+    delete:
+      tags: [Users]
+      summary: Delete user by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: User deleted
+        403:
+          description: Forbidden for another user
+        404:
+          description: User not found
 
   /api/users/{id}/bookings:
     get:
+      tags: [Users]
       summary: Get user bookings
       security:
         - bearerAuth: []
@@ -79,6 +180,37 @@ paths:
       responses:
         200:
           description: User bookings
+        403:
+          description: Forbidden for another user
+        404:
+          description: User not found
+        502:
+          description: Booking service unavailable
+
+  /api/users/internal/{id}/exists:
+    get:
+      tags: [Internal]
+      summary: Internal endpoint for Booking Service user validation
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - in: header
+          name: x-service-token
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: User existence status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserExistsResponse'
+        401:
+          description: Missing or invalid service token
 
 components:
   securitySchemes:
@@ -86,3 +218,75 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 67d7d4dcf89bc5fbeb0bf12a
+        name:
+          type: string
+          example: Anuja Silva
+        email:
+          type: string
+          example: anuja@gmail.com
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          example: Anuja Silva
+        email:
+          type: string
+          example: anuja@gmail.com
+        password:
+          type: string
+          example: 123456
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          example: anuja@gmail.com
+        password:
+          type: string
+          example: 123456
+    UpdateUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Anuja Perera
+        email:
+          type: string
+          example: anuja.perera@gmail.com
+        password:
+          type: string
+          example: newpassword123
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+        user:
+          $ref: '#/components/schemas/User'
+    UserExistsResponse:
+      type: object
+      properties:
+        exists:
+          type: boolean
+          example: true
+        user:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/User'
