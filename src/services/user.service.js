@@ -5,6 +5,35 @@ const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const { createHttpError } = require("../utils/httpError");
 
+async function sendNotification(payload) {
+  if (!process.env.NOTIFICATION_SERVICE_URL) {
+    console.warn("Notification skipped: NOTIFICATION_SERVICE_URL is not configured");
+    return;
+  }
+
+  const serviceToken =
+    process.env.INTERNAL_SERVICE_TOKEN || "shared_service_secret";
+
+  try {
+    await axios.post(
+      `${process.env.NOTIFICATION_SERVICE_URL}/api/notifications/send`,
+      payload,
+      {
+        headers: {
+          "x-service-token": serviceToken,
+        },
+        timeout: Number(process.env.NOTIFICATION_SERVICE_TIMEOUT_MS || 5000),
+      },
+    );
+  } catch (error) {
+    console.error(
+      "Failed to send notification:",
+      error.response?.status || error.code || "UNKNOWN",
+      error.response?.data || error.message,
+    );
+  }
+}
+
 exports.createUser = async (data) => {
   return await User.create(data);
 };
@@ -25,10 +54,24 @@ exports.registerUser = async (data) => {
   }
 
   const hashedPassword = await bcrypt.hash(data.password, 10);
-  return await User.create({
+  const user = await User.create({
     ...data,
     password: hashedPassword,
   });
+
+  await sendNotification({
+    userId: user._id.toString(),
+    type: "WELCOME",
+    title: "Welcome to Luma Events",
+    message: "Your account has been created successfully. Start exploring events now.",
+    channel: "IN_APP",
+    status: "UNREAD",
+    metadata: {
+      email: user.email,
+    },
+  });
+
+  return user;
 };
 
 exports.loginUser = async (email, password) => {
@@ -39,6 +82,19 @@ exports.loginUser = async (email, password) => {
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) throw createHttpError(401, "Invalid credentials");
+
+  await sendNotification({
+    userId: user._id.toString(),
+    type: "LOGIN_ALERT",
+    title: "New login detected",
+    message: "Your account was signed in successfully.",
+    channel: "IN_APP",
+    status: "UNREAD",
+    metadata: {
+      email: user.email,
+      loginAt: new Date().toISOString(),
+    },
+  });
 
   return user;
 };
@@ -70,15 +126,42 @@ exports.updateUser = async (id, updates) => {
     throw createHttpError(404, "User not found");
   }
 
+  await sendNotification({
+    userId: user._id.toString(),
+    type: "PROFILE_UPDATED",
+    title: "Profile updated",
+    message: "Your account details were updated successfully.",
+    channel: "IN_APP",
+    status: "UNREAD",
+    metadata: {
+      email: user.email,
+    },
+  });
+
   return user;
 };
 
 exports.deleteUser = async (id) => {
-  const user = await User.findByIdAndDelete(id);
+  const user = await User.findById(id);
 
   if (!user) {
     throw createHttpError(404, "User not found");
   }
+
+  await sendNotification({
+    userId: user._id.toString(),
+    type: "ACCOUNT_DELETED",
+    title: "Account deleted",
+    message: "Your account has been deleted from the platform.",
+    channel: "IN_APP",
+    status: "UNREAD",
+    metadata: {
+      email: user.email,
+      deletedAt: new Date().toISOString(),
+    },
+  });
+
+  await User.findByIdAndDelete(id);
 
   return user;
 };

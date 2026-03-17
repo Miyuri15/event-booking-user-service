@@ -11,6 +11,7 @@
 - Get, update, and delete a specific user
 - Fetch a user's bookings from Booking Service
 - Expose an internal user-validation endpoint for Booking Service
+- Send in-app notifications for registration, login, profile updates, and account deletion
 
 ## Project Structure
 
@@ -60,6 +61,8 @@ MONGO_URI=your_mongo_uri
 JWT_SECRET=your_secret
 BOOKING_SERVICE_URL=http://localhost:8082
 BOOKING_SERVICE_TIMEOUT_MS=5000
+NOTIFICATION_SERVICE_URL=http://localhost:8085
+NOTIFICATION_SERVICE_TIMEOUT_MS=5000
 INTERNAL_SERVICE_TOKEN=shared_service_secret
 ```
 
