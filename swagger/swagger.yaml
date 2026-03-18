@@ -16,7 +16,7 @@ paths:
   /api/users/register:
     post:
       tags: [Auth]
-      summary: Register a new user
+      summary: Register a new user account
       requestBody:
         required: true
         content:
@@ -72,6 +72,34 @@ paths:
                   $ref: '#/components/schemas/User'
         401:
           description: Missing or invalid token
+        403:
+          description: Admin access required
+
+  /api/users/admins:
+    post:
+      tags: [Users]
+      summary: Create a new admin user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        201:
+          description: Admin created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        401:
+          description: Missing or invalid token
+        403:
+          description: Admin access required
+        409:
+          description: Email already exists
 
   /api/users/me:
     get:
@@ -231,6 +259,10 @@ components:
         email:
           type: string
           example: anuja@gmail.com
+        role:
+          type: string
+          enum: [USER, ADMIN]
+          example: USER
         createdAt:
           type: string
           format: date-time

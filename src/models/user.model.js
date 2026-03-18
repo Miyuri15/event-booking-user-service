@@ -2,6 +2,11 @@
 
 const mongoose = require("mongoose");
 
+const USER_ROLES = {
+  USER: "USER",
+  ADMIN: "ADMIN",
+};
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -21,6 +26,12 @@ const userSchema = new mongoose.Schema(
       required: true,
       select: false,
     },
+    role: {
+      type: String,
+      enum: Object.values(USER_ROLES),
+      default: USER_ROLES.USER,
+      required: true,
+    },
   },
   {
     timestamps: true,
@@ -39,4 +50,7 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-module.exports = mongoose.model("User", userSchema);
+module.exports = {
+  User: mongoose.model("User", userSchema),
+  USER_ROLES,
+};

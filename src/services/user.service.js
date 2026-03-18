@@ -1,6 +1,6 @@
 // src/services/user.service.js
 
-const User = require("../models/user.model");
+const { User, USER_ROLES } = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const { createHttpError } = require("../utils/httpError");
@@ -57,6 +57,7 @@ exports.registerUser = async (data) => {
   const user = await User.create({
     ...data,
     password: hashedPassword,
+    role: USER_ROLES.USER,
   });
 
   await sendNotification({
@@ -74,6 +75,22 @@ exports.registerUser = async (data) => {
   return user;
 };
 
+exports.createAdminUser = async (data) => {
+  const existingUser = await User.findOne({ email: data.email });
+
+  if (existingUser) {
+    throw createHttpError(409, "Email is already registered");
+  }
+
+  const hashedPassword = await bcrypt.hash(data.password, 10);
+
+  return await User.create({
+    ...data,
+    password: hashedPassword,
+    role: USER_ROLES.ADMIN,
+  });
+};
+
 exports.loginUser = async (email, password) => {
   const user = await User.findOne({ email }).select("+password");
 
@@ -82,6 +99,11 @@ exports.loginUser = async (email, password) => {
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) throw createHttpError(401, "Invalid credentials");
+
+  if (!user.role) {
+    user.role = USER_ROLES.USER;
+    await user.save();
+  }
 
   await sendNotification({
     userId: user._id.toString(),
@@ -197,4 +219,41 @@ exports.checkUserExists = async (id) => {
     exists: Boolean(user),
     user: user || null,
   };
+};
+
+exports.seedDefaultAdmin = async () => {
+  await User.updateMany(
+    { role: { $exists: false } },
+    { $set: { role: USER_ROLES.USER } },
+  );
+
+  const adminEmail = (process.env.DEFAULT_ADMIN_EMAIL || "admin@eventbooking.com")
+    .trim()
+    .toLowerCase();
+  const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD || "Admin123!";
+  const adminName = (process.env.DEFAULT_ADMIN_NAME || "System Admin").trim();
+
+  const existingAdmin = await User.findOne({ email: adminEmail });
+
+  if (existingAdmin) {
+    if (existingAdmin.role !== USER_ROLES.ADMIN) {
+      existingAdmin.role = USER_ROLES.ADMIN;
+      await existingAdmin.save();
+      console.log(`Default admin role restored for ${adminEmail}`);
+    }
+
+    return existingAdmin;
+  }
+
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  const admin = await User.create({
+    name: adminName,
+    email: adminEmail,
+    password: hashedPassword,
+    role: USER_ROLES.ADMIN,
+  });
+
+  console.log(`Default admin created for ${adminEmail}`);
+
+  return admin;
 };
