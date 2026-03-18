@@ -93,6 +93,9 @@ Service URLs:
 ### Protected with JWT
 
 - `POST /api/users/admins` (admin only)
+- `GET /api/users/admins` (admin only)
+- `PUT /api/users/admins/:id` (admin only)
+- `DELETE /api/users/admins/:id` (admin only)
 - `GET /api/users` (admin only)
 - `GET /api/users/me`
 - `GET /api/users/:id`

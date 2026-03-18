@@ -76,6 +76,25 @@ paths:
           description: Admin access required
 
   /api/users/admins:
+    get:
+      tags: [Users]
+      summary: Get all admin users
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of admins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        401:
+          description: Missing or invalid token
+        403:
+          description: Admin access required
+
     post:
       tags: [Users]
       summary: Create a new admin user
@@ -100,6 +119,65 @@ paths:
           description: Admin access required
         409:
           description: Email already exists
+
+  /api/users/admins/{id}:
+    put:
+      tags: [Users]
+      summary: Update an admin user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        200:
+          description: Updated admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        400:
+          description: Validation error or target user is not an admin
+        401:
+          description: Missing or invalid token
+        403:
+          description: Admin access required
+        404:
+          description: Admin not found
+        409:
+          description: Email already exists
+
+    delete:
+      tags: [Users]
+      summary: Delete an admin user
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Admin deleted
+        400:
+          description: Target user is not an admin
+        401:
+          description: Missing or invalid token
+        403:
+          description: Admin access required
+        404:
+          description: Admin not found
 
   /api/users/me:
     get:

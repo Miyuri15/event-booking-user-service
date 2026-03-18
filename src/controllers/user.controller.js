@@ -27,6 +27,15 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+exports.getAdmins = async (req, res) => {
+  try {
+    const admins = await userService.getAdminUsers();
+    res.json(admins);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
+
 exports.getUser = async (req, res) => {
   try {
     const user = await userService.getUserById(req.params.id);
@@ -56,6 +65,25 @@ exports.createAdmin = async (req, res) => {
     const payload = validateRegistrationPayload(req.body);
     const user = await userService.createAdminUser(payload);
     res.status(201).json(user);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ message: err.message });
+  }
+};
+
+exports.updateAdmin = async (req, res) => {
+  try {
+    const updates = validateUpdatePayload(req.body);
+    const user = await userService.updateAdminUser(req.params.id, updates);
+    res.json(user);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ message: err.message });
+  }
+};
+
+exports.deleteAdmin = async (req, res) => {
+  try {
+    await userService.deleteAdminUser(req.params.id);
+    res.json({ message: "Admin deleted successfully" });
   } catch (err) {
     res.status(err.statusCode || 500).json({ message: err.message });
   }
