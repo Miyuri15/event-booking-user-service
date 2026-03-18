@@ -42,6 +42,10 @@ exports.getAllUsers = async () => {
   return await User.find().sort({ createdAt: -1 });
 };
 
+exports.getAdminUsers = async () => {
+  return await User.find({ role: USER_ROLES.ADMIN }).sort({ createdAt: -1 });
+};
+
 exports.getUserById = async (id) => {
   return await User.findById(id);
 };
@@ -89,6 +93,34 @@ exports.createAdminUser = async (data) => {
     password: hashedPassword,
     role: USER_ROLES.ADMIN,
   });
+};
+
+exports.updateAdminUser = async (id, updates) => {
+  const admin = await User.findById(id);
+
+  if (!admin) {
+    throw createHttpError(404, "Admin user not found");
+  }
+
+  if (admin.role !== USER_ROLES.ADMIN) {
+    throw createHttpError(400, "Target user is not an admin");
+  }
+
+  return await exports.updateUser(id, updates);
+};
+
+exports.deleteAdminUser = async (id) => {
+  const admin = await User.findById(id);
+
+  if (!admin) {
+    throw createHttpError(404, "Admin user not found");
+  }
+
+  if (admin.role !== USER_ROLES.ADMIN) {
+    throw createHttpError(400, "Target user is not an admin");
+  }
+
+  return await exports.deleteUser(id);
 };
 
 exports.loginUser = async (email, password) => {
