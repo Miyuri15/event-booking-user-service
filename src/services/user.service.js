@@ -34,6 +34,15 @@ async function sendNotification(payload) {
   }
 }
 
+function mapRecipient(user) {
+  return {
+    id: user._id.toString(),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+}
+
 exports.createUser = async (data) => {
   return await User.create(data);
 };
@@ -250,6 +259,35 @@ exports.checkUserExists = async (id) => {
   return {
     exists: Boolean(user),
     user: user || null,
+  };
+};
+
+exports.resolveNotificationRecipients = async ({ userIds = [], roles = [] } = {}) => {
+  const normalizedUserIds = [...new Set((Array.isArray(userIds) ? userIds : [userIds]).filter(Boolean))];
+  const normalizedRoles = [...new Set((Array.isArray(roles) ? roles : [roles]).filter(Boolean))];
+
+  const recipientsById = new Map();
+
+  if (normalizedUserIds.length) {
+    const directUsers = await User.find({ _id: { $in: normalizedUserIds } });
+
+    directUsers.forEach((user) => {
+      recipientsById.set(user._id.toString(), mapRecipient(user));
+    });
+  }
+
+  if (normalizedRoles.length) {
+    const roleUsers = await User.find({ role: { $in: normalizedRoles } });
+
+    roleUsers.forEach((user) => {
+      recipientsById.set(user._id.toString(), mapRecipient(user));
+    });
+  }
+
+  return {
+    recipients: Array.from(recipientsById.values()),
+    requestedUserIds: normalizedUserIds,
+    requestedRoles: normalizedRoles,
   };
 };
 

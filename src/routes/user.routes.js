@@ -14,6 +14,11 @@ router.post("/login", controller.login);
 
 // INTERNAL SERVICE-TO-SERVICE
 router.get("/internal/:id/exists", serviceAuth, controller.checkUserExists);
+router.post(
+  "/internal/recipients/resolve",
+  serviceAuth,
+  controller.resolveNotificationRecipients,
+);
 
 // PROTECTED
 router.post("/admins", auth, authorizeRole("ADMIN"), controller.createAdmin);
