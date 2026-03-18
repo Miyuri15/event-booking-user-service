@@ -158,3 +158,12 @@ exports.checkUserExists = async (req, res) => {
     res.status(error.statusCode || 500).json({ message: error.message });
   }
 };
+
+exports.resolveNotificationRecipients = async (req, res) => {
+  try {
+    const result = await userService.resolveNotificationRecipients(req.body);
+    res.json(result);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ message: error.message });
+  }
+};
