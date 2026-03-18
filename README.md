@@ -5,6 +5,7 @@
 ## What This Service Covers
 
 - Register a new user
+- Support `USER` and `ADMIN` roles
 - Login and issue JWT tokens
 - Get all users
 - Get the logged-in user's profile
@@ -12,6 +13,7 @@
 - Fetch a user's bookings from Booking Service
 - Expose an internal user-validation endpoint for Booking Service
 - Send in-app notifications for registration, login, profile updates, and account deletion
+- Seed one default admin account when the service starts
 
 ## Project Structure
 
@@ -64,6 +66,9 @@ BOOKING_SERVICE_TIMEOUT_MS=5000
 NOTIFICATION_SERVICE_URL=http://localhost:8085
 NOTIFICATION_SERVICE_TIMEOUT_MS=5000
 INTERNAL_SERVICE_TOKEN=shared_service_secret
+DEFAULT_ADMIN_NAME=System Admin
+DEFAULT_ADMIN_EMAIL=admin@eventbooking.com
+DEFAULT_ADMIN_PASSWORD=Admin123!
 ```
 
 ## Run Locally
@@ -87,7 +92,8 @@ Service URLs:
 
 ### Protected with JWT
 
-- `GET /api/users`
+- `POST /api/users/admins` (admin only)
+- `GET /api/users` (admin only)
 - `GET /api/users/me`
 - `GET /api/users/:id`
 - `PUT /api/users/:id`
@@ -125,15 +131,19 @@ Expected response:
 
 ## Demo Flow
 
-1. Register a user.
-2. Login and copy the JWT token.
-3. Call `GET /api/users/me` with `Authorization: Bearer <token>`.
-4. Call `GET /api/users/{id}/bookings` after Booking Service is running.
-5. Show Booking Service validating users through `/api/users/internal/{id}/exists`.
+1. Start the service and login with the default admin account.
+2. Use the admin token to call `POST /api/users/admins` if you want to create more admins.
+3. Register a normal user through `POST /api/users/register`.
+4. Login and copy the JWT token.
+5. Call `GET /api/users/me` with `Authorization: Bearer <token>`.
+6. Call `GET /api/users/{id}/bookings` after Booking Service is running.
+7. Show Booking Service validating users through `/api/users/internal/{id}/exists`.
 
 ## Notes
 
 - Passwords are hashed with `bcryptjs`.
 - Password hashes are not returned in API responses.
-- A user can only access their own `/:id` profile routes with JWT auth.
+- Self-registration always creates a `USER`.
+- Admin accounts cannot self-register and must be created by an authenticated admin.
+- A user can only access their own `/:id` profile routes with JWT auth, while admins can access all user profiles.
 - Swagger is available for documentation and demo support.

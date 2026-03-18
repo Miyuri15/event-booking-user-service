@@ -51,6 +51,16 @@ exports.register = async (req, res) => {
   }
 };
 
+exports.createAdmin = async (req, res) => {
+  try {
+    const payload = validateRegistrationPayload(req.body);
+    const user = await userService.createAdminUser(payload);
+    res.status(201).json(user);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ message: err.message });
+  }
+};
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = validateLoginPayload(req.body);
@@ -62,6 +72,7 @@ exports.login = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        role: user.role,
       },
     });
   } catch (err) {
