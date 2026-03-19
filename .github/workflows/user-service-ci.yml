@@ -7,7 +7,7 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: userservice
-  ACR_NAME: eventbookingacr
+  ACR_NAME: eventbookingcr-h6cxfac9ege9hdb5
   IMAGE_NAME: user-service
   NODE_VERSION: "20"
 
