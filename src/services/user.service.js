@@ -5,26 +5,27 @@ const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const { createHttpError } = require("../utils/httpError");
 
-async function sendNotification(payload) {
-  if (!process.env.NOTIFICATION_SERVICE_URL) {
-    console.warn("Notification skipped: NOTIFICATION_SERVICE_URL is not configured");
-    return;
+function getApiGatewayUrl() {
+  if (!process.env.API_GATEWAY_URL) {
+    throw createHttpError(500, "API_GATEWAY_URL is not configured");
   }
 
+  return process.env.API_GATEWAY_URL.replace(/\/$/, "");
+}
+
+async function sendNotification(payload) {
   const serviceToken =
     process.env.INTERNAL_SERVICE_TOKEN || "shared_service_secret";
+  const notificationPath =
+    process.env.GATEWAY_NOTIFICATION_SEND_PATH || "/api/notifications/send";
 
   try {
-    await axios.post(
-      `${process.env.NOTIFICATION_SERVICE_URL}/api/notifications/send`,
-      payload,
-      {
-        headers: {
-          "x-service-token": serviceToken,
-        },
-        timeout: Number(process.env.NOTIFICATION_SERVICE_TIMEOUT_MS || 5000),
+    await axios.post(`${getApiGatewayUrl()}${notificationPath}`, payload, {
+      headers: {
+        "x-service-token": serviceToken,
       },
-    );
+      timeout: Number(process.env.GATEWAY_TIMEOUT_MS || 5000),
+    });
   } catch (error) {
     console.error(
       "Failed to send notification:",
@@ -229,27 +230,31 @@ exports.deleteUser = async (id) => {
   return user;
 };
 
-exports.getUserBookings = async (userId) => {
+exports.getUserBookings = async (userId, token) => {
   const user = await User.findById(userId);
 
   if (!user) {
     throw createHttpError(404, "User not found");
   }
 
+  const bookingsPathTemplate =
+    process.env.GATEWAY_USER_BOOKINGS_PATH || "/api/bookings/user/{userId}";
+  const bookingsPath = bookingsPathTemplate.replace("{userId}", userId);
+
   try {
-    const response = await axios.get(
-      `${process.env.BOOKING_SERVICE_URL}/api/bookings/user/${userId}`,
-      {
-        timeout: Number(process.env.BOOKING_SERVICE_TIMEOUT_MS || 5000),
+    const response = await axios.get(`${getApiGatewayUrl()}${bookingsPath}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
       },
-    );
+      timeout: Number(process.env.GATEWAY_TIMEOUT_MS || 5000),
+    });
     return response.data;
   } catch (error) {
     if (error.response?.status === 404) {
       return [];
     }
 
-    throw createHttpError(502, "Failed to fetch bookings from Booking Service");
+    throw createHttpError(502, "Failed to fetch bookings through API Gateway");
   }
 };
 

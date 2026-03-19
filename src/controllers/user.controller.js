@@ -110,7 +110,7 @@ exports.login = async (req, res) => {
 
 exports.getUserBookings = async (req, res) => {
   try {
-    const bookings = await userService.getUserBookings(req.params.id);
+    const bookings = await userService.getUserBookings(req.params.id, req.token);
     res.json(bookings);
   } catch (error) {
     res.status(500).json({ message: error.message });
