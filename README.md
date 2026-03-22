@@ -58,7 +58,7 @@ user-service/
 Create a `.env` file using `.env.example`.
 
 ```env
-PORT=8080
+PORT=8081
 MONGO_URI=your_mongo_uri
 JWT_SECRET=your_secret
 BOOKING_SERVICE_URL=http://localhost:8082
@@ -80,8 +80,8 @@ npm run dev
 
 Service URLs:
 
-- API base: `http://localhost:8080/api/users`
-- Swagger: `http://localhost:8080/api-docs`
+- API base: `http://localhost:8086/api/users`
+- Swagger: `http://localhost:8086/api-docs`
 
 ## API Endpoints
 

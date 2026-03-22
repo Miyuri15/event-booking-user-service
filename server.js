@@ -6,7 +6,7 @@ const connectDB = require("./src/config/db");
 
 connectDB();
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8081;
 
 app.listen(PORT, () => {
   console.log(`User Service running on port ${PORT} (pid: ${process.pid})`);

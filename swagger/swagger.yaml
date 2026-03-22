@@ -5,7 +5,15 @@ info:
   description: API documentation for the Event Booking user-service
 
 servers:
-  - url: http://localhost:8080
+  - url: "{baseUrl}"
+    description: User service base URL
+    variables:
+      baseUrl:
+        default: http://localhost:8086
+        description: Local API Gateway URL. Replace with your deployed gateway domain in production.
+        enum:
+          - http://localhost:8086
+          - https://api.yourdomain.com
 
 tags:
   - name: Auth
